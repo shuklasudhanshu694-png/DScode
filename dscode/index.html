@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="no-referrer">
+  <title>DScode — Web IDE</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app" id="app">
+    <header class="titlebar">
+      <button id="btnToggleSidebar" class="icon-btn" title="Toggle sidebar (Ctrl+B)">☰</button>
+      <span class="title-logo">◇ DScode</span>
+      <span class="title-sep"></span>
+      <div class="title-actions">
+        <button id="btnNewFile" class="tb-btn" title="New file (Ctrl+Alt+N)">＋ File</button>
+        <button id="btnNewFolder" class="tb-btn" title="New folder">📁 Folder</button>
+        <button id="btnUpload" class="tb-btn" title="Upload files or a ZIP">⬆ Upload</button>
+        <button id="btnImport" class="tb-btn" title="Import from pasted text">📥 Import</button>
+        <button id="btnRun" class="tb-btn run" title="Run preview (Ctrl+Enter)">▶ Run</button>
+        <button id="btnDownload" class="tb-btn download" title="Download workspace as ZIP">⬇ ZIP</button>
+        <button id="btnPalette" class="tb-btn" title="Command palette (Ctrl+Shift+P)">⌘ Commands</button>
+        <a href="../terminal/index.html" target="_blank" rel="noopener" class="tb-btn" id="linkGit">💻 Git Terminal</a>
+      </div>
+      <div class="title-toggles">
+        <button id="btnTogglePanel" class="icon-btn" title="Toggle problems / console (Ctrl+`)">▤</button>
+        <button id="btnTogglePreview" class="icon-btn" title="Toggle preview">👁</button>
+      </div>
+    </header>
+
+    <div class="main">
+      <aside class="sidebar" id="sidebar">
+        <div class="side-tabs">
+          <button class="side-tab active" data-view="explorer">EXPLORER</button>
+          <button class="side-tab" data-view="search">SEARCH</button>
+        </div>
+        <div class="side-view" id="viewExplorer">
+          <div class="sidebar-head">
+            <span class="sidebar-title">FILES</span>
+            <div class="sidebar-actions">
+              <button id="btnSideNewFile" class="icon-btn" title="New file">＋</button>
+              <button id="btnSideNewFolder" class="icon-btn" title="New folder">📁</button>
+              <button id="btnCollapseAll" class="icon-btn" title="Collapse all">⊟</button>
+              <button id="btnReset" class="icon-btn danger" title="Reset workspace">🗑</button>
+            </div>
+          </div>
+          <div class="sidebar-search"><input id="searchInput" type="text" placeholder="Filter files…" autocomplete="off"></div>
+          <div class="file-tree" id="fileTree" tabindex="0"></div>
+          <div class="sidebar-foot"><span id="fileCount">0 files</span></div>
+        </div>
+        <div class="side-view hidden" id="viewSearch">
+          <div class="gsearch">
+            <input id="gsQuery" type="text" placeholder="Search in all files" autocomplete="off">
+            <input id="gsReplace" type="text" placeholder="Replace with" autocomplete="off">
+            <div class="gs-opts">
+              <label><input type="checkbox" id="gsCase"> Aa</label>
+              <label><input type="checkbox" id="gsRegex"> .*</label>
+              <button id="gsRun" class="mini-btn">Search</button>
+              <button id="gsReplaceAll" class="mini-btn danger">Replace all</button>
+            </div>
+            <div id="gsSummary" class="gs-summary"></div>
+          </div>
+          <div class="gs-results" id="gsResults"></div>
+        </div>
+      </aside>
+
+      <div class="editor-area" id="editorArea">
+        <div class="tabs" id="tabs"></div>
+        <div class="findbar hidden" id="findBar">
+          <input id="findInput" type="text" placeholder="Find" autocomplete="off">
+          <button id="findCase" class="toggle" title="Match case">Aa</button>
+          <button id="findWord" class="toggle" title="Whole word">ab</button>
+          <button id="findRegex" class="toggle" title="Regular expression">.*</button>
+          <span id="findCount" class="find-count">0</span>
+          <button id="findPrev" class="icon-btn" title="Previous (Shift+Enter)">↑</button>
+          <button id="findNext" class="icon-btn" title="Next (Enter)">↓</button>
+          <button id="findClose" class="icon-btn" title="Close (Esc)">✕</button>
+          <input id="replaceInput" type="text" placeholder="Replace" autocomplete="off">
+          <button id="replaceOne" class="mini-btn">Replace</button>
+          <button id="replaceAll" class="mini-btn">All</button>
+        </div>
+
+        <div class="editor-container">
+          <div class="editor-wrapper" id="editorWrapper" style="display:none;">
+            <div class="gutter" id="gutter"></div>
+            <div class="code-area" id="codeArea">
+              <pre class="highlight" id="highlightLayer" aria-hidden="true"></pre>
+              <div class="decor" id="decor"><div class="decor-inner" id="decorInner"></div></div>
+              <div id="autocompleteBox" class="autocomplete-box hidden"></div>
+            </div>
+          </div>
+          <div class="media-view hidden" id="mediaView"></div>
+          <div class="welcome" id="welcome">
+            <div class="welcome-logo">◇</div>
+            <h1>DScode</h1>
+            <p class="welcome-sub">Offline web IDE with live linting, smart completion, real preview and a secure Git bridge</p>
+            <div class="welcome-actions">
+              <button id="btnWelcomeNewFile">New File</button>
+              <button id="btnWelcomeUpload">Upload</button>
+              <button id="btnWelcomeImport">Import from Text</button>
+            </div>
+            <div class="shortcuts">
+              <span><kbd>Ctrl</kbd>+<kbd>P</kbd> open file</span>
+              <span><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> commands</span>
+              <span><kbd>Ctrl</kbd>+<kbd>Enter</kbd> run</span>
+              <span><kbd>Ctrl</kbd>+<kbd>F</kbd> find</span>
+              <span><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>F</kbd> search all</span>
+              <span><kbd>Ctrl</kbd>+<kbd>/</kbd> comment</span>
+              <span><kbd>Tab</kbd> expand Emmet / snippet</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="bottom-panels hidden" id="bottomPanels">
+          <div class="panel-tabs">
+            <button class="panel-tab active" data-panel="problems">PROBLEMS <span id="problemCount" class="badge">0</span></button>
+            <button class="panel-tab" data-panel="console">CONSOLE <span id="consoleCount" class="badge">0</span></button>
+            <span class="panel-spacer"></span>
+            <button id="btnPanelClear" class="icon-btn" title="Clear console">⌫</button>
+            <button id="btnClosePanels" class="icon-btn" title="Close panel">✕</button>
+          </div>
+          <div class="panel-content" id="panelProblems"><div class="problems-list" id="problemsList"></div></div>
+          <div class="panel-content hidden" id="panelConsole">
+            <div class="console-list" id="consoleList"></div>
+            <div class="console-input-row"><span class="console-prompt">›</span><input id="consoleInput" type="text" placeholder="Evaluate JavaScript in the preview page" autocomplete="off" spellcheck="false"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="splitter hidden" id="previewSplit" title="Drag to resize"></div>
+      <div class="preview-panel hidden" id="previewPanel">
+        <div class="preview-head">
+          <button id="btnPreviewBack" class="icon-btn" title="Back">←</button>
+          <span id="previewTitle" class="preview-title">PREVIEW</span>
+          <div class="preview-actions">
+            <label class="live-toggle" title="Re-render automatically while you type"><input type="checkbox" id="previewLive" checked> Live</label>
+            <button id="btnPreviewDevice" class="icon-btn" title="Cycle device width">🖥</button>
+            <button id="btnPreviewRefresh" class="icon-btn" title="Refresh">↻</button>
+            <button id="btnPreviewClose" class="icon-btn" title="Close">✕</button>
+          </div>
+        </div>
+        <div class="preview-body" id="previewBody">
+          <iframe id="previewFrame" title="Preview" sandbox="allow-scripts allow-modals allow-forms allow-popups allow-downloads"></iframe>
+        </div>
+      </div>
+    </div>
+
+    <footer class="statusbar" id="statusbar">
+      <div class="status-left">
+        <span id="statusPath">No file open</span>
+        <span id="statusErrors" class="status-item clickable hidden" title="Show problems">ⓧ 0 ⚠ 0</span>
+        <a id="statusGit" class="status-item clickable" href="../terminal/index.html" target="_blank" rel="noopener" title="Git sync state">⎇ not synced</a>
+        <span id="statusSave" class="status-item" title="Autosave state">● saved</span>
+      </div>
+      <div class="status-right">
+        <span id="statusPos" class="status-item">Ln 1, Col 1</span>
+        <span id="statusSize" class="status-item">0 B</span>
+        <span id="statusTab" class="status-item clickable" title="Toggle tab size">Spaces: 2</span>
+        <span id="statusLang" class="status-item">—</span>
+      </div>
+    </footer>
+  </div>
+
+  <div id="dialogOverlay" class="modal-overlay hidden">
+    <div class="modal-box small" role="dialog" aria-modal="true">
+      <div class="modal-head"><span id="dialogTitle"></span><button id="dialogClose" class="icon-btn">✕</button></div>
+      <div class="dialog-body"><div id="dialogMsg" class="dialog-msg"></div><input id="dialogInput" type="text" class="dialog-input hidden" autocomplete="off"></div>
+      <div class="modal-foot" id="dialogFoot"></div>
+    </div>
+  </div>
+
+  <div id="paletteOverlay" class="modal-overlay top hidden">
+    <div class="palette">
+      <input id="paletteInput" type="text" placeholder="Type a file name · > for commands · : for line number" autocomplete="off" spellcheck="false">
+      <div id="paletteList" class="palette-list"></div>
+    </div>
+  </div>
+
+  <div id="importModal" class="modal-overlay hidden">
+    <div class="modal-box">
+      <div class="modal-head"><span>Import files</span><button id="btnImportClose" class="icon-btn">✕</button></div>
+      <p class="modal-hint">Paste a message containing fenced code blocks. File paths are read from headings like <code>### 1. `src/app.js`</code>, from a first-line comment such as <code>// src/app.js</code>, or from a project tree.</p>
+      <textarea id="importTextarea" placeholder="Paste Markdown with ``` fenced code blocks here…"></textarea>
+      <div class="modal-foot">
+        <button id="btnImportCancel" class="modal-btn">Cancel</button>
+        <button id="btnImportConfirm" class="modal-btn primary">Import files</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="ctxMenu" class="ctx-menu hidden"></div>
+  <div id="toasts" class="toasts"></div>
+  <input type="file" id="fileInput" class="hidden" multiple>
+  <input type="file" id="dirInput" class="hidden" webkitdirectory>
+
+  <script src="../shared/store.js"></script>
+  <script src="lang.js"></script>
+  <script src="lint.js"></script>
+  <script src="assist.js"></script>
+  <script src="zip.js"></script>
+  <script src="preview.js"></script>
+  <script src="app.js"></script>
+  <script src="files.js"></script>
+  <script src="editing.js"></script>
+  <script src="tools.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>

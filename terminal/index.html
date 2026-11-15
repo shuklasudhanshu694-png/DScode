@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src https://api.github.com; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+  <meta name="referrer" content="no-referrer">
+  <title>Git Push Terminal — DScode</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top">
+    <div class="brand">⎇ Git Push Terminal</div>
+    <div class="chips" id="chips"></div>
+    <div class="top-actions">
+      <button id="modeAuto" class="seg active">Auto</button>
+      <button id="modeManual" class="seg">Manual</button>
+      <a class="link-btn" href="../dscode/index.html">← DScode</a>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section id="dash" class="dash"></section>
+    <section class="termwrap">
+      <div class="term-head"><span>OUTPUT</span><button id="btnClearLog" class="mini">Clear</button></div>
+      <div id="log" class="log" aria-live="polite"></div>
+      <div class="prompt-row">
+        <span id="promptLabel" class="prompt-label">git&gt;</span>
+        <input id="cmd" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Type help — tokens are never typed here, use: auth login">
+      </div>
+    </section>
+  </main>
+
+  <div id="modal" class="overlay hidden">
+    <div class="modal" role="dialog" aria-modal="true">
+      <h3 id="mTitle"></h3>
+      <div id="mBody" class="m-body"></div>
+      <input id="mInput" class="m-input hidden" type="text" autocomplete="off" spellcheck="false">
+      <div id="mFoot" class="m-foot"></div>
+    </div>
+  </div>
+
+  <script src="../shared/store.js"></script>
+  <script src="gitclient.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

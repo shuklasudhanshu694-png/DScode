@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Code Organizer — Exact Folder &amp; File Preservation</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+      background: linear-gradient(145deg, #f4f7fc 0%, #e9eef6 100%);
+      min-height: 100vh; display: flex; flex-direction: column;
+      align-items: center; padding: 2rem 1rem; color: #1e2b3c;
+    }
+    h1 {
+      font-size: 2rem; font-weight: 700;
+      background: linear-gradient(135deg, #1f3a5f, #2d5a8b);
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+      margin-bottom: .4rem; text-align: center;
+    }
+    .subtitle {
+      font-size: 1rem; color: #4b5e77; margin-bottom: 1.5rem;
+      text-align: center; max-width: 780px; line-height: 1.5;
+    }
+    .subtitle code {
+      background: #eef4fa; padding: .1rem .4rem; border-radius: .4rem;
+      font-family: 'SF Mono', monospace; font-size: .9rem; color: #1e3a5f;
+      border: 1px solid #d5e2f0;
+    }
+    .container {
+      width: 100%; max-width: 960px;
+      background: rgba(255,255,255,.78); backdrop-filter: blur(8px);
+      border-radius: 2rem; padding: 2rem 2.2rem;
+      box-shadow: 0 25px 50px -15px rgba(20,40,70,.2), 0 6px 12px rgba(0,0,0,.03);
+      border: 1px solid rgba(255,255,255,.8);
+    }
+    textarea {
+      width: 100%; height: 320px; padding: 1.2rem 1.4rem;
+      font-family: 'SF Mono','Fira Code',monospace; font-size: .9rem;
+      line-height: 1.55; border: 2px solid #d3dfed; border-radius: 1.6rem;
+      background: #fff; resize: vertical; outline: none; color: #1a2b3e;
+      margin-bottom: 1.4rem; box-shadow: inset 0 2px 6px rgba(0,0,0,.02);
+    }
+    textarea:focus { border-color: #2d5a8b; box-shadow: 0 0 0 4px rgba(45,90,139,.12); }
+    .controls { display: flex; flex-wrap: wrap; gap: .8rem; margin-bottom: 1.6rem; }
+    button, .btn-link {
+      font-family: inherit; font-weight: 600; font-size: 1rem;
+      padding: .8rem 2rem; border-radius: 3rem; border: none; cursor: pointer;
+      transition: all .2s ease; display: inline-flex; align-items: center;
+      gap: .5rem; box-shadow: 0 4px 8px rgba(0,0,0,.04); text-decoration: none;
+    }
+    button:active, .btn-link:active { transform: scale(.97); }
+    button:disabled { opacity: .6; cursor: not-allowed; }
+    
+    #processBtn { background: #1e3c5a; color: #fff; }
+    #processBtn:hover:not(:disabled) { background: #2d5a8b; transform: translateY(-1px); }
+    #clearBtn { background: #f1f5f9; color: #2c3f58; border: 1.5px solid #cfddee; }
+    #clearBtn:hover { background: #e2eaf3; }
+    
+    #downloadBtn { background: #0e639c; color: #fff; display: none; }
+    #downloadBtn:hover { background: #1177bb; transform: translateY(-1px); }
+    
+    #openDscodeBtn { background: #1a7f37; color: #fff; display: inline-flex; }
+    #openDscodeBtn:hover { background: #2ea043; transform: translateY(-1px); }
+
+    .log {
+      background: #ffffffd9; border-radius: 1.6rem; padding: 1.5rem 1.8rem;
+      border: 1px solid #d8e3f0; font-size: .93rem; line-height: 1.6;
+      max-height: 460px; overflow-y: auto;
+    }
+    .log h2 { font-size: 1.1rem; font-weight: 600; color: #1a3a55; margin: 1.1rem 0 .5rem; }
+    .log h2:first-of-type { margin-top: 0; }
+    .log ul { list-style: none; }
+    .log li { padding: .3rem 0 .3rem 1.5rem; position: relative; color: #2c3f58; word-break: break-word; }
+    .log li::before { content: "•"; position: absolute; left: .3rem; color: #5f83a8; font-weight: 700; }
+    .log code {
+      background: #eef4fa; padding: .1rem .45rem; border-radius: .4rem;
+      font-family: 'SF Mono', monospace; font-size: .88rem; color: #1e3a5f;
+      border: 1px solid #d5e2f0;
+    }
+    .log .warning { color: #9b6b1f; }
+    .log .error { color: #b13e3e; font-weight: 500; }
+    .log .success { color: #2d6b4a; }
+    .log p { margin: .4rem 0; }
+    .tag {
+      display: inline-block; font-size: .72rem; padding: .1rem .5rem;
+      border-radius: 1rem; background: #e6f0fa; color: #2d5a8b;
+      font-weight: 600; margin-left: .4rem;
+    }
+    .tag.explicit { background: #e8f5ec; color: #2d6b4a; }
+    .tag.tree { background: #e0f2ff; color: #106b9c; }
+    .tag.lang { background: #fff3e0; color: #9b6b1f; }
+    @media (max-width: 600px) {
+      .container { padding: 1.4rem; border-radius: 1.6rem; }
+      h1 { font-size: 1.6rem; } textarea { height: 240px; }
+      button, .btn-link { padding: .7rem 1.4rem; font-size: .92rem; }
+    }
+  </style>
+</head>
+<body>
+  <h1>📦 Code Organizer — Exact Paths</h1>
+  <p class="subtitle">
+    Paste a message with a project tree or headings like <code>### 1. `dscode/index.html`</code>. 
+    Organize first, then download the ZIP or open it directly in the DScode IDE.
+  </p>
+
+  <div class="container">
+    <textarea id="input" placeholder="Paste your message here — including the file structure tree, headings, and code blocks…"></textarea>
+    <div class="controls">
+      <button id="processBtn">🚀 Organize Files</button>
+      <button id="downloadBtn">⬇ Download ZIP</button>
+      <a href="dscode/index.html" target="_blank" id="openDscodeBtn" class="btn-link">💻 Open in DScode</a>
+      <button id="clearBtn">Clear</button>
+    </div>
+    <div id="log" class="log">
+      <p style="color:#6c819c;">Waiting for input…</p>
+    </div>
+  </div>
+
+  <script>
+    'use strict';
+    let organizedData = null;
+
+    function escapeHtml(str) {
+      return String(str).replace(/[&<>"']/g, function (m) {
+        return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m];
+      });
+    }
+
+    function parseStructureTree(text) {
+      const map = new Map();
+      const lines = text.split(/\r?\n/);
+      let treeStart = -1;
+
+      for (let i = 0; i < lines.length; i++) {
+        const trimmed = lines[i].trim();
+        if (/^[\w.\-]+\/?$/.test(trimmed) && trimmed.endsWith('/')) {
+          let hasStructure = false;
+          for (let j = i + 1; j < Math.min(i + 40, lines.length); j++) {
+            if (/[├└│]/.test(lines[j]) || /^\s{2,}\S+/.test(lines[j])) { hasStructure = true; break; }
+            if (/^```/.test(lines[j].trim())) break;
+          }
+          if (hasStructure) { treeStart = i; break; }
+        }
+      }
+      if (treeStart === -1) return [];
+
+      const stack = [];
+      for (let i = treeStart; i < lines.length; i++) {
+        const raw = lines[i];
+        if (/^\s*```/.test(raw)) break;
+        if (raw.trim() === '') continue;
+
+        let name = null;
+        let depth = 0;
+
+        const treeMatch = raw.match(/^([\s│├└─┬┐┘┴┼]*)([├└]──\s*)(.+)$/);
+        if (treeMatch) {
+          const prefix = treeMatch[1];
+          depth = Math.floor(prefix.length / 4) + 1;
+          name = treeMatch[3].trim();
+        } else if (i === treeStart) {
+          name = raw.trim().replace(/\/$/, '');
+          depth = 0;
+        } else {
+          const indentMatch = raw.match(/^(\s*)([^\s].*)$/);
+          if (indentMatch) {
+            const spaces = indentMatch[1].length;
+            depth = Math.floor(spaces / 2); 
+            name = indentMatch[2].trim();
+          } else {
+            continue;
+          }
+        }
+        if (!name) continue;
+
+        name = name.replace(/^[^\w.\-/]+/, '').replace(/^[-*+]\s+/, '');
+        const nameToken = name.match(/^([A-Za-z0-9_\-./]+)/);
+        if (nameToken) name = nameToken[1];
+
+        const isFolder = name.endsWith('/') || name.endsWith('\\');
+        const cleanName = name.replace(/[\/\\]$/, '');
+
+        while (stack.length > 0 && stack[stack.length - 1].depth >= depth) {
+          stack.pop();
+        }
+        stack.push({ depth, name: cleanName });
+
+        const fullPath = stack.map(s => s.name).join('/');
+
+        if (isFolder) {
+          map.set(fullPath, { path: fullPath, isFolder: true });
+        } else if (/\.\w{1,10}$/.test(cleanName)) {
+          map.set(fullPath, { path: fullPath, isFolder: false });
+        }
+      }
+      return Array.from(map.values());
+    }
+
+    function extractCodeBlocks(text) {
+      const blocks = [];
+      const lines = text.split(/\r?\n/);
+      let i = 0;
+
+      while (i < lines.length) {
+        const line = lines[i];
+        const fenceMatch = line.match(/^(\s*)(`{3,}|~{3,})\s*([^\s`~]*)\s*$/);
+        if (!fenceMatch) { i++; continue; }
+
+        const fence = fenceMatch[2];
+        const lang = (fenceMatch[3] || '').trim().toLowerCase();
+        const fenceChar = fence[0];
+        const fenceLen = fence.length;
+
+        let hint = null;
+        for (let k = i - 1; k >= Math.max(0, i - 5); k--) {
+          const prev = lines[k].trim();
+          if (!prev) continue;
+          let m = prev.match(/^#{1,6}\s+(?:\d+\.\s*)?`?([a-zA-Z0-9_\-./]+\.[a-z0-9]{1,8})`?/i);
+          if (m) { hint = m[1]; break; }
+          m = prev.match(/^\*{2,}`?([a-zA-Z0-9_\-./]+\.[a-z0-9]{1,8})`?\*{2,}\s*$/);
+          if (m) { hint = m[1]; break; }
+          m = prev.match(/^`([a-zA-Z0-9_\-./]+\.[a-z0-9]{1,8})`\s*$/);
+          if (m) { hint = m[1]; break; }
+          break;
+        }
+
+        const contentLines = [];
+        let j = i + 1;
+        let closed = false;
+        while (j < lines.length) {
+          const closeMatch = lines[j].match(/^\s*(`{3,}|~{3,})\s*$/);
+          if (closeMatch && closeMatch[1][0] === fenceChar && closeMatch[1].length >= fenceLen) {
+            closed = true;
+            break;
+          }
+          contentLines.push(lines[j]);
+          j++;
+        }
+
+        if (closed) {
+          const content = contentLines.join('\n');
+          if (!hint && contentLines.length > 0) {
+            const first = contentLines[0].trim();
+            const cm = first.match(/^(?:\/\/|#|--|;|\/\*+|\*+|<!--)\s*([A-Za-z0-9_\-./]+\.[A-Za-z0-9]{1,10})(?:\s|-->|\*\/|$)/);
+            if (cm) hint = cm[1];
+          }
+          blocks.push({ lang, content, hint });
+          i = j + 1;
+        } else {
+          i++;
+        }
+      }
+      return blocks;
+    }
+
+    function sanitizePath(p) {
+      if (!p) return '';
+      p = p.replace(/\\/g, '/').trim().replace(/^\.\//, '').replace(/^\/+/, '');
+      return p.split('/').filter(s => s !== '' && s !== '.' && s !== '..').join('/');
+    }
+
+    function buildFileMap(blocks, treeEntries) {
+      const files = [];
+      const warnings = [];
+      const usedPaths = new Set();
+      const claimedTree = new Map();
+      const treeFiles = treeEntries.filter(e => !e.isFolder);
+
+      function uniquePath(path) {
+        if (!usedPaths.has(path)) {
+          usedPaths.add(path);
+          return { path, renamed: false };
+        }
+        const slash = path.lastIndexOf('/');
+        const dir  = slash >= 0 ? path.slice(0, slash + 1) : '';
+        const file = slash >= 0 ? path.slice(slash + 1) : path;
+        const dot  = file.lastIndexOf('.');
+        const base = dot >= 0 ? file.slice(0, dot) : file;
+        const ext  = dot >= 0 ? file.slice(dot) : '';
+        let n = 2, candidate;
+        do {
+          candidate = `${dir}${base}_${n}${ext}`;
+          n++;
+        } while (usedPaths.has(candidate));
+        usedPaths.add(candidate);
+        return { path: candidate, renamed: true, original: path };
+      }
+
+      const LANG_EXT = {
+        html: ['.html', '.htm'], htm: ['.html', '.htm'], css: ['.css'], scss: ['.scss'], sass: ['.sass'], less: ['.less'],
+        js: ['.js', '.mjs', '.cjs'], javascript: ['.js', '.mjs', '.cjs'], jsx: ['.jsx'], ts: ['.ts'], typescript: ['.ts'], tsx: ['.tsx'],
+        json: ['.json'], xml: ['.xml'], yaml: ['.yml', '.yaml'], yml: ['.yml', '.yaml'], md: ['.md'], markdown: ['.md'],
+        py: ['.py'], python: ['.py'], java: ['.java'], c: ['.c'], cpp: ['.cpp'], cs: ['.cs'], go: ['.go'], rs: ['.rs'], rb: ['.rb'], php: ['.php'], sh: ['.sh'], bash: ['.sh'], zsh: ['.sh'], sql: ['.sql']
+      };
+
+      blocks.forEach(function (b, idx) {
+        if (!b.content.trim()) return;
+        let finalPath = null;
+        let method = '';
+        const hintPath = b.hint ? sanitizePath(b.hint) : null;
+
+        if (hintPath && treeFiles.length > 0) {
+          // 1. Exact match
+          let match = treeFiles.find(tf => !claimedTree.has(tf.path) && tf.path === hintPath);
+          
+          // 2. Suffix match (e.g. hint is 'dscode/index.html', tree is 'your-project/dscode/index.html')
+          if (!match) {
+            match = treeFiles.find(tf => !claimedTree.has(tf.path) && tf.path.endsWith('/' + hintPath));
+          }
+          
+          // 3. Prefixed match (e.g. hint is 'index.html', tree is 'your-project/index.html')
+          if (!match) {
+             const rootFolders = treeEntries.filter(e => e.isFolder && !e.path.includes('/'));
+             if (rootFolders.length === 1) {
+                const candidate = rootFolders[0].path + '/' + hintPath;
+                match = treeFiles.find(tf => !claimedTree.has(tf.path) && tf.path === candidate);
+             }
+          }
+
+          if (match) {
+            finalPath = match.path;
+            method = 'tree-match';
+            claimedTree.set(match.path, idx);
+          }
+        }
+
+        // 4. Use hint path directly if no tree match
+        if (!finalPath && hintPath) {
+          finalPath = hintPath;
+          method = 'explicit heading';
+        }
+
+        // 5. Basename match
+        if (!finalPath && b.hint && treeFiles.length > 0) {
+           const hintBase = b.hint.split('/').pop();
+           const match = treeFiles.find(tf => !claimedTree.has(tf.path) && tf.path.split('/').pop() === hintBase);
+           if (match) {
+              finalPath = match.path;
+              method = 'tree-match (basename)';
+              claimedTree.set(match.path, idx);
+           }
+        }
+
+        // 6. Language match
+        if (!finalPath && treeFiles.length > 0 && b.lang) {
+          const exts = LANG_EXT[b.lang] || ['.' + b.lang];
+          const match = treeFiles.find(function (tf) {
+            if (claimedTree.has(tf.path)) return false;
+            return exts.some(function (e) { return tf.path.toLowerCase().endsWith(e); });
+          });
+          if (match) { finalPath = match.path; method = 'tree-match (lang)'; claimedTree.set(match.path, idx); }
+        }
+
+        // 7. Fallback
+        if (!finalPath) {
+          const l = (b.lang || '').toLowerCase();
+          const defaults = { html: 'index.html', css: 'style.css', js: 'script.js', javascript: 'script.js', json: 'data.json', md: 'README.md' };
+          finalPath = defaults[l] || (l ? 'file.' + l : 'file.txt');
+          method = 'inferred';
+        }
+
+        const u = uniquePath(finalPath);
+        if (u.renamed) warnings.push('Duplicate path "' + u.original + '" → placed at "' + u.path + '"');
+        files.push({ path: u.path, content: b.content, method: method, size: new Blob([b.content]).size });
+      });
+
+      const unused = treeFiles.filter(tf => !claimedTree.has(tf.path));
+      if (unused.length > 0) {
+        const missing = unused.map(u => u.path);
+        warnings.push(missing.length + ' tree file(s) had no matching code block: ' + missing.join(', '));
+      }
+
+      return { files, warnings };
+    }
+
+    function processMessage(text) {
+      const blocks = extractCodeBlocks(text);
+      const treeEntries = parseStructureTree(text);
+
+      if (blocks.length === 0) {
+        return { files: [], logHtml: '<p class="error">❌ No fenced code blocks found.</p>' };
+      }
+
+      const result = buildFileMap(blocks, treeEntries);
+      const files = result.files;
+      const warnings = result.warnings;
+
+      let logHtml = '<h2>✅ Summary</h2>';
+      const folderCount = treeEntries.filter(e => e.isFolder).length;
+      logHtml += `<p><strong>${blocks.length}</strong> code blocks · <strong>${files.length}</strong> files · <strong>${folderCount}</strong> folders.</p>`;
+
+      if (files.length > 0) {
+        logHtml += '<h2>📄 Files created (exact paths)</h2><ul>';
+        files.forEach(f => {
+          let cls = f.method === 'explicit heading' ? 'explicit' : (f.method.indexOf('tree-match') === 0 ? 'tree' : 'lang');
+          logHtml += `<li><code>${escapeHtml(f.path)}</code> <span class="tag ${cls}">${escapeHtml(f.method)}</span></li>`;
+        });
+        logHtml += '</ul>';
+      }
+
+      if (warnings.length > 0) {
+        logHtml += '<h2>⚠️ Notes</h2><ul>';
+        warnings.forEach(w => { logHtml += `<li class="warning">${escapeHtml(w)}</li>`; });
+        logHtml += '</ul>';
+      } else if (files.length > 0) {
+        logHtml += '<p class="success" style="margin-top:1rem;">✨ All paths preserved exactly.</p>';
+      }
+
+      return { files, treeEntries, logHtml };
+    }
+
+    function openInDscode(files, treeEntries) {
+      if (!files || !files.length) {
+        window.open('dscode/index.html', '_blank');
+        return;
+      }
+
+      const dscodeFiles = {};
+      files.forEach(f => { dscodeFiles[f.path] = { content: f.content }; });
+      
+      const foldersSet = new Set();
+      if (treeEntries) treeEntries.forEach(e => { if (e.isFolder) foldersSet.add(e.path); });
+      files.forEach(f => {
+        const parts = f.path.split('/'); parts.pop();
+        let cur = '';
+        parts.forEach(p => { cur += (cur ? '/' : '') + p; foldersSet.add(cur); });
+      });
+
+      const firstFile = files.length > 0 ? files[0].path : null;
+
+      try {
+        localStorage.setItem('dscode-handoff', JSON.stringify({
+          files: dscodeFiles,
+          folders: Array.from(foldersSet),
+          activeTab: firstFile
+        }));
+      } catch (err) {
+        alert('Could not hand the files to DScode: ' + err.message + '\nDownload the ZIP instead.');
+        return;
+      }
+
+      window.open('dscode/index.html', '_blank');
+    }
+
+    function crc32(bytes) {
+      let crc = 0xffffffff;
+      for (const b of bytes) {
+        crc ^= b;
+        for (let i = 0; i < 8; i++) crc = (crc >>> 1) ^ (crc & 1 ? 0xedb88320 : 0);
+      }
+      return (crc ^ 0xffffffff) >>> 0;
+    }
+
+    function buildZipBlob(fileList, folders) {
+      const enc = new TextEncoder();
+      const localParts = [], centralParts = [];
+      let offset = 0;
+
+      const entries = fileList.map(f => ({ path: f.path, content: f.content, dir: false }))
+        .concat((folders || []).map(f => ({ path: f.replace(/\/$/, '') + '/', content: '', dir: true })));
+
+      entries.forEach(entry => {
+        const nameBytes = enc.encode(entry.path);
+        const dataBytes = enc.encode(entry.content);
+        const crc = crc32(dataBytes);
+
+        const local = new Uint8Array(30 + nameBytes.length);
+        const lv = new DataView(local.buffer);
+        lv.setUint32(0, 0x04034b50, true); lv.setUint16(4, 20, true); lv.setUint16(6, 0x0800, true);
+        lv.setUint16(8, 0, true); lv.setUint16(10, 0, true); lv.setUint16(12, 0x21, true);
+        lv.setUint32(14, crc, true); lv.setUint32(18, dataBytes.length, true);
+        lv.setUint32(22, dataBytes.length, true); lv.setUint16(26, nameBytes.length, true);
+        lv.setUint16(28, 0, true); local.set(nameBytes, 30);
+        localParts.push(local, dataBytes);
+
+        const central = new Uint8Array(46 + nameBytes.length);
+        const cv = new DataView(central.buffer);
+        cv.setUint32(0, 0x02014b50, true); cv.setUint16(4, 20, true); cv.setUint16(6, 20, true);
+        cv.setUint16(8, 0x0800, true); cv.setUint16(10, 0, true); cv.setUint16(12, 0, true);
+        cv.setUint16(14, 0x21, true); cv.setUint32(16, crc, true); cv.setUint32(20, dataBytes.length, true);
+        cv.setUint32(24, dataBytes.length, true); cv.setUint16(28, nameBytes.length, true);
+        cv.setUint16(30, 0, true); cv.setUint16(32, 0, true); cv.setUint16(34, 0, true);
+        cv.setUint16(36, 0, true); cv.setUint32(38, entry.dir ? 0x10 : 0, true); cv.setUint32(42, offset, true);
+        central.set(nameBytes, 46); centralParts.push(central);
+
+        offset += local.length + dataBytes.length;
+      });
+
+      const centralSize = centralParts.reduce((s, p) => s + p.length, 0);
+      const end = new Uint8Array(22);
+      const ev = new DataView(end.buffer);
+      ev.setUint32(0, 0x06054b50, true); ev.setUint16(8, fileList.length, true);
+      ev.setUint16(10, fileList.length, true); ev.setUint32(12, centralSize, true);
+      ev.setUint32(16, offset, true);
+
+      return new Blob([...localParts, ...centralParts, end], { type: 'application/zip' });
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+      const processBtn = document.getElementById('processBtn');
+      const clearBtn = document.getElementById('clearBtn');
+      const downloadBtn = document.getElementById('downloadBtn');
+      const openDscodeBtn = document.getElementById('openDscodeBtn');
+      const input = document.getElementById('input');
+      const logDiv = document.getElementById('log');
+
+      processBtn.addEventListener('click', function () {
+        const text = input.value.trim();
+        if (!text) {
+          logDiv.innerHTML = '<p class="error">❌ Please paste some text with code blocks first.</p>';
+          return;
+        }
+        
+        processBtn.disabled = true;
+        processBtn.textContent = '⏳ Organizing…';
+        
+        setTimeout(() => {
+          try {
+            const result = processMessage(text);
+            logDiv.innerHTML = result.logHtml;
+            
+            if (result.files.length > 0) {
+              organizedData = result;
+              downloadBtn.style.display = 'inline-flex';
+            } else {
+              organizedData = null;
+              downloadBtn.style.display = 'none';
+            }
+          } catch (err) {
+            console.error(err);
+            logDiv.innerHTML = '<p class="error">❌ Error: ' + escapeHtml(err.message) + '</p>';
+          } finally {
+            processBtn.disabled = false;
+            processBtn.textContent = '🚀 Organize Files';
+          }
+        }, 50);
+      });
+
+      downloadBtn.addEventListener('click', function () {
+        if (!organizedData || !organizedData.files.length) return;
+        try {
+          const folderList = organizedData.treeEntries.filter(e => e.isFolder).map(e => e.path);
+          const blob = buildZipBlob(organizedData.files, folderList);
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'organized_files.zip';
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          setTimeout(() => URL.revokeObjectURL(url), 1500);
+        } catch (err) {
+          alert('ZIP creation failed: ' + err.message);
+        }
+      });
+
+      openDscodeBtn.addEventListener('click', function () {
+        if (organizedData && organizedData.files.length) {
+          openInDscode(organizedData.files, organizedData.treeEntries);
+        } else {
+          openInDscode(null, null);
+        }
+      });
+
+      clearBtn.addEventListener('click', function () {
+        input.value = '';
+        logDiv.innerHTML = '<p style="color:#6c819c;">Waiting for input…</p>';
+        organizedData = null;
+        downloadBtn.style.display = 'none';
+        input.focus();
+      });
+
+      input.focus();
+    });
+  </script>
+</body>
+</html>
