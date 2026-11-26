@@ -2,15 +2,18 @@
 
 ```
 your-project/
-├── index.html        Organizer: paste Markdown → folders/ZIP, or open in DScode
-├── shared/store.js   IndexedDB workspace store, git blob SHA-1, cross-tab sync
-├── dscode/           The IDE (index.html, style.css, lang/lint/assist/zip/preview/files/editing/tools/main .js)
+├── index.html        Organizer: paste Markdown → review files → ZIP, or open in DScode
+├── shared/           store.js (IndexedDB workspace, git SHA-1, cross-tab sync), parser.js (Markdown code-block/filename parser), zip.js
+├── dscode/           The IDE (index.html, style.css, lang/lint/assist/preview/files/editing/tools/main .js)
 ├── terminal/         Git Push Terminal (strict CSP, gitclient.js = hardened GitHub client)
-├── tests/            node tests/gitclient.test.js  (39 checks against a fake GitHub server)
+├── tests/            node tests/gitclient.test.js (39 Git checks) · node tests/parser.test.js (19 filename-detection checks)
+├── tools/            organizer.template.html + build-organizer.js (inlines parser/zip into index.html)
 └── _headers          Netlify security headers (CSP, frame blocking)
 ```
 
 ## Run it
+`index.html` (the Organizer) is a **single self-contained file**: it works on its own, from `file://`, or on any host, with no other files. DScode and the Git terminal need the whole project folder (keep `shared/` next to them); if a file is missing they now say so on screen instead of silently doing nothing. When replacing a file, replace the **entire** file — pasting patch fragments (lines such as `=======`) into an existing file corrupts it. If you change `shared/parser.js` or `shared/zip.js`, run `node tools/build-organizer.js` to refresh `index.html`.
+
 Serve over http(s) (Netlify, or `python3 -m http.server`). Opening via `file://` can give each page its own isolated storage, so the three tools would not share the workspace.
 Deploy on Netlify: drag the folder in; `_headers` is picked up automatically.
 
@@ -21,6 +24,18 @@ Deploy on Netlify: drag the folder in; `_headers` is picked up automatically.
 4. **Preview sandbox:** `allow-same-origin` + `allow-scripts` let any pasted code read your workspace. Removed (see Preview below).
 5. **Git terminal:** `force: true` pushes (could silently destroy remote history); `res.json()` read twice on 403; repo names containing dots (e.g. `me.github.io`) mis-parsed; remote data inserted via `innerHTML` (XSS); push uploaded every file every time; no empty-repo handling; no conflict detection; no deletion handling.
 6. Highlighting was regex-on-HTML (broke on strings/regex/template literals), bracket lint was line-based, undo history was destroyed by programmatic edits, `prompt()/confirm()` dialogs.
+
+## Organizer: file-name detection and extras
+**Why names were missed:** the old parser only looked at the single line directly above a code fence. A line such as `bash` between `.env.example` and the fence hid the name, dotfiles without a second dot (`.gitignore`) and extensionless names (`Dockerfile`) were not recognised, a `README.md` containing its own ``` blocks was cut at the first inner fence, and the project-tree block itself became a bogus `file.txt`.
+
+`shared/parser.js` now:
+- looks back up to 8 lines, skipping blanks, `---` separators and language words (`bash`, `json`, `js`…);
+- accepts `## \`path\``, `### 1. \`path\``, `**path**`, `- \`path\``, `File: path`, a bare `path` line, and fence info such as ```` ```js title="src/app.js" ````, ```` ```js:src/app.js ````, ```` ```python main.py ````, plus a first-line comment (`// src/app.js`);
+- recognises dotfiles and known extensionless names, and rejects prose, URLs and version numbers (`v1.0.0`) as file names;
+- keeps nested fences inside Markdown files intact and ignores the tree block.
+
+New in the Organizer: review list with include/exclude checkboxes, editable paths (guessed names are highlighted amber), preview / copy / download per file, duplicate-path guard, "remove top-level folder", copy path list, **Paste** button, drop a `.md`/`.txt` file on the box, `Ctrl+Enter` to organize, and a **History** (restore, delete one, clear all; on by default, switch off with the checkbox; stored only in this browser).
+Empty folders from the tree are kept in the ZIP. DScode's *Import from text* uses the same parser (it has no tree matching, so use the Organizer when you want the tree's folder prefix).
 
 ## DScode features
 - **Editor:** real tokenizers (JS/TS, HTML with embedded CSS/JS/JSON, CSS, JSON, Python, Markdown, YAML, shell); native undo preserved; auto-indent, auto-close pairs/tags, wrap-selection, soft-tab backspace, move/duplicate/delete line, comment toggle, bracket matching, squiggles + gutter markers, large-file mode (>1.5 MB).

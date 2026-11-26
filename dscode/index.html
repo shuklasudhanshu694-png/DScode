@@ -198,12 +198,24 @@
   <script src="lang.js"></script>
   <script src="lint.js"></script>
   <script src="assist.js"></script>
-  <script src="zip.js"></script>
+  <script src="../shared/zip.js"></script>
+  <script src="../shared/parser.js"></script>
   <script src="preview.js"></script>
   <script src="app.js"></script>
   <script src="files.js"></script>
   <script src="editing.js"></script>
   <script src="tools.js"></script>
   <script src="main.js"></script>
+  <script>
+    window.addEventListener('load', function () {
+      var need = { DSStore: '../shared/store.js', DSLang: 'lang.js', DSLint: 'lint.js', DSAssist: 'assist.js', DSZip: '../shared/zip.js', DSParse: '../shared/parser.js', DSPreview: 'preview.js', DSApp: 'app.js' };
+      var missing = Object.keys(need).filter(function (k) { return !window[k]; }).map(function (k) { return need[k]; });
+      if (!missing.length) return;
+      var box = document.createElement('div');
+      box.setAttribute('style', 'position:fixed;inset:0;z-index:9999;background:#1e1e1e;color:#f48771;padding:32px;font:14px/1.6 system-ui');
+      box.textContent = 'DScode could not start. These files failed to load: ' + missing.join(', ') + '. Upload the whole project folder (keep the shared/ folder next to dscode/) and reload.';
+      document.body.appendChild(box);
+    });
+  </script>
 </body>
 </html>

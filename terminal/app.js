@@ -1,5 +1,9 @@
 (function () {
   'use strict';
+  if (!window.DSGit || !window.DSStore) {
+    document.body.textContent = 'Git terminal could not start: gitclient.js or ../shared/store.js failed to load. Upload the whole project folder (keep shared/ next to terminal/) and reload.';
+    return;
+  }
   var G = window.DSGit, S = window.DSStore;
   var $ = function (id) { return document.getElementById(id); };
   var IDLE_MS = 20 * 60 * 1000, REMEMBER_KEY = 'dsgit-session-token';

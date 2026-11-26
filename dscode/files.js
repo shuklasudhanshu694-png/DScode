@@ -330,29 +330,15 @@
 
   /* ---------- text import ---------- */
   function parseImportText(text) {
-    var out = [], re = /^[ \t]*(```|~~~)([\w+#.-]*)[^\n]*\n([\s\S]*?)^[ \t]*\1[ \t]*$/gm, m, idx = 0;
-    while ((m = re.exec(text)) !== null) {
-      var lang = (m[2] || '').toLowerCase(), content = m[3].replace(/\r\n/g, '\n').replace(/\n$/, '');
-      if (!content.trim()) continue;
-      var before = text.slice(0, m.index).split('\n'), name = null, k = before.length - 1;
-      while (k >= 0 && !before[k].trim()) k--;
-      if (k >= 0) {
-        var hm = /`([^`\s]+\.[A-Za-z0-9]{1,10})`/.exec(before[k]) || /^\s*(?:#{1,6}\s*)?(?:\d+[.)]\s*)?(?:\*\*)?(?:file(?:name)?\s*:\s*)?([\w@.\/-]+\.[A-Za-z0-9]{1,10})(?:\*\*)?\s*:?\s*$/i.exec(before[k]);
-        if (hm) name = hm[1];
-      }
-      if (!name) {
-        var first = content.split('\n')[0], cm = /^\s*(?:\/\/|#|--|;|\/\*+|<!--)\s*(?:file(?:name)?\s*:\s*)?([\w@.\/-]+\.[A-Za-z0-9]{1,10})\b/i.exec(first);
-        if (cm) name = cm[1];
-      }
-      if (!name) {
-        var def = { html: 'index.html', css: 'style.css', js: 'script.js', javascript: 'script.js', ts: 'main.ts', python: 'main.py', py: 'main.py', json: 'data.json', md: 'README.md', yaml: 'config.yml', yml: 'config.yml', sh: 'run.sh', bash: 'run.sh' };
-        name = def[lang] || ('file' + (idx + 1) + '.' + (lang || 'txt'));
-      }
-      name = App.sanitizePath(name); if (!name) continue;
-      idx++; out.push({ path: name, content: content + '\n', binary: false, mime: '' });
-    }
-    var seen = {};
-    out.forEach(function (e) { if (seen[e.path]) { var dot = e.path.lastIndexOf('.'); e.path = (dot > -1 ? e.path.slice(0, dot) : e.path) + '_' + (++seen[e.path]) + (dot > -1 ? e.path.slice(dot) : ''); } else seen[e.path] = 1; });
+    var blocks = window.DSParse.extractBlocks(text), out = [], seen = {};
+    blocks.forEach(function (b) {
+      if (!b.content.trim()) return;
+      var name = App.sanitizePath(b.hint || window.DSParse.defaultName(b.lang));
+      if (!name) return;
+      if (seen[name]) { var dot = name.lastIndexOf('.'), base = dot > 0 ? name.slice(0, dot) : name, ext = dot > 0 ? name.slice(dot) : ''; name = base + '_' + (++seen[name]) + ext; seen[name] = 1; }
+      else seen[name] = 1;
+      out.push({ path: name, content: b.content + '\n', binary: false, mime: '' });
+    });
     return out;
   }
   function importFromText() {
